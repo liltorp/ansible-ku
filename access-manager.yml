@@ -3,6 +3,11 @@
   hosts: all
   become: true
   tasks:
+  - name: run yum update on all servers to ensure they are up to date
+    yum:
+    name: '*'
+    state: latest
+    exclude: kernel*,foo*
   - name: install extra packages AM servers
     yum:
        name: glibc.i686,libstdc++.i686,libXau.x86_64,libxcb.x86_64,libX11.x86_64,libXext.x86_64,libXi.x86_64,libXtst.x86_64,libXrender.x86_64,gettext.x86_64,ncurses-libs.i686,libgcc.i686,rsyslog.x86_64,rsyslog-gnutls.x86_64,binutils.x86_64,apr.x86_64,apr-util.x86_64,libtool-ltdl.x86_64,unixODBC.x86_64,patch.x86_64,net-snmp-libs.x86_64,net-snmp.x86_64,createrepo,nss-softokn-freebl.i686,net-tools
