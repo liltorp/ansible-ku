@@ -3,11 +3,13 @@
   hosts: all
   become: true
   pre_tasks:
+  
   - name: run yum update on all servers to ensure they are up to date
     yum:
       name: '*'
       state: latest
     exclude: kernel*,foo*
+    
 - hosts:
   become: true
   tasks:
