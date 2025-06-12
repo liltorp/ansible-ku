@@ -8,7 +8,7 @@
     yum:
       name: '*'
       state: latest
-    exclude: kernel*,foo*
+    #exclude: kernel*,foo*
     
 - hosts: am_package_targets
   become: true
