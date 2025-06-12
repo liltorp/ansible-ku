@@ -45,3 +45,15 @@ amsec11ul
 [udv_sspr_servers]
 ampwr11ul
 ampwr12ul
+
+[am_package_targets:children]
+prod_admin_servers
+prod_id_servers
+prod_gw_servers
+udv_admin_servers
+udv_id_servers
+udv_gw_servers
+
+[edir_package_targets:children]
+prod_edir_servers
+udv_edir_servers
