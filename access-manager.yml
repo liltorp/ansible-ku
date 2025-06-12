@@ -10,18 +10,23 @@
       state: latest
     exclude: kernel*,foo*
     
-- hosts:
+- hosts: am_package_targets
   become: true
   tasks:
   - name: install extra packages AM servers
     yum:
        name: glibc.i686,libstdc++.i686,libXau.x86_64,libxcb.x86_64,libX11.x86_64,libXext.x86_64,libXi.x86_64,libXtst.x86_64,libXrender.x86_64,gettext.x86_64,ncurses-libs.i686,libgcc.i686,rsyslog.x86_64,rsyslog-gnutls.x86_64,binutils.x86_64,apr.x86_64,apr-util.x86_64,libtool-ltdl.x86_64,unixODBC.x86_64,patch.x86_64,net-snmp-libs.x86_64,net-snmp.x86_64,createrepo,nss-softokn-freebl.i686,net-tools
        state: present
-- hosts:       
+       
+- hosts: edir_package_targets      
   - name: install extra packages EDir servers
     yum:
        name: dnf-utils,createrepo,yum-utils,libgcc*.i686,libncurses*,ncurses,libxcrypt-compat,iproute,initscripts,procps,net-tools
        state: present
+       
+- hosts: prod_id_servers:udv_id_servers
+  become: true
+  tasks:
   - name: firewall rules for id servers
     firewalld:
       port: "{{item}}"
@@ -36,6 +41,10 @@
       - 7801/tcp
       - 8443/tcp
       - 9968/tcp
+      
+- hosts: prod_admin_servers:udv_admin_servers
+  become: true
+  tasks:
   - name: firewall rules for admin servers
     firewalld:
       port: "{{item}}"
@@ -51,7 +60,11 @@
       - 8030/tcp
       - 8443/tcp
       - 8444/tcp
-      - 9968/tcp 
+      - 9968/tcp
+      
+- hosts: prod_gw_servers:udv_gw_servers
+  become: true
+  tasks:
   - name: firewall rules for gw servers
     firewalld:
       port: "{{item}}"
@@ -66,6 +79,10 @@
       - 1443/tcp
       - 7801/tcp
       - 9968/tcp
+      
+- hosts: prod_id_servers:udv_id_servers
+  become: true
+  tasks:
   - name: firewall rules for odb servers
     firewalld:
       port: "{{item}}"
@@ -75,7 +92,11 @@
     loop:
       - 22/tcp
       - 1521/tcp
-  - name: firewall rules for pwr servers
+      
+- hosts: prod_sspr_servers:udv_sspr_servers
+  become: true
+  tasks:
+  - name: firewall rules for sspr servers
     firewalld:
       port: "{{item}}"
       state: enabled
@@ -85,6 +106,10 @@
       - 22/tcp
       - 80/tcp
       - 443/tcp
+      
+- hosts: prod_edir_servers:udv_edir_servers
+  become: true
+  tasks:
   - name: firewall rules for edir servers
     firewalld:
       port: "{{item}}"
@@ -97,7 +122,11 @@
       - 636/tcp
       - 8030/tcp
       - 8443/tcp
-  - name: firewall rules for aa-db servers
+      
+- hosts: aa_fwrules_targets
+  become: true
+  tasks:
+  - name: firewall rules for aa servers
     firewalld:
       port: "{{item}}"
       state: enabled
@@ -111,18 +140,5 @@
       - 5432/tcp
       - 9200/tcp
       - 9300/tcp
-  - name: firewall rules for aa-web servers
-    firewalld:
-      port: "{{item}}"
-      state: enabled
-      permanent: yes
-      immediate: yes
-    loop:
-      - 22/tcp
-      - 80/tcp
-      - 443/tcp
-      - 8080/tcp
-      - 5432/tcp
-      - 9200/tcp
-      - 9300/tcp
+ 
       
