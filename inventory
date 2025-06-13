@@ -18,14 +18,6 @@ amgw14pl
 amsec11pl
 amsec12pl
 
-[prod_aaweb_servers]
-aaweb11pa
-aaweb12pa
-
-[prod_aadb_servers]
-aadb11pa
-aadb12pa
-
 [prod_sspr_servers]
 ampwr11pl
 ampwr12pl
@@ -66,6 +58,3 @@ udv_gw_servers
 prod_edir_servers
 udv_edir_servers
 
-[aa_fwrules_targets:children]
-prod_aaweb_servers
-prod_aadb_servers
