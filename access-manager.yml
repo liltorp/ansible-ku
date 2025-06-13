@@ -3,13 +3,6 @@
   hosts: all
   become: true
   pre_tasks:
-  - name: Enable codeready-builder repo
-    command: >
-      subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms
-    register: codeready_repo_result
-    changed_when: "'enabled' in codeready_repo_result.stdout"
-    failed_when: codeready_repo_result.rc != 0 and 'is already enabled' not in codeready_repo_result.stdout
-
   - name: Clean yum metadata
     command: yum clean all
 
@@ -137,22 +130,5 @@
       - 8030/tcp
       - 8443/tcp
       
-- hosts: aa_fwrules_targets
-  become: true
-  tasks:
-  - name: firewall rules for aa servers
-    firewalld:
-      port: "{{item}}"
-      state: enabled
-      permanent: yes
-      immediate: yes
-    loop:
-      - 22/tcp
-      - 80/tcp
-      - 443/tcp
-      - 8080/tcp
-      - 5432/tcp
-      - 9200/tcp
-      - 9300/tcp
  
       
