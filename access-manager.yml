@@ -35,7 +35,7 @@
   tasks:
   - name: install extra packages EDir servers
     yum:
-       name: dnf-utils,createrepo,yum-utils,libgcc*.i686,libncurses*,ncurses,libxcrypt-compat,iproute,initscripts,procps,net-tools
+       name: dnf-utils,createrepo,yum-utils,libgcc*.i686,libncurses*,ncurses,libxcrypt,iproute,initscripts,procps,net-tools
        state: present
        
 - hosts: prod_id_servers:udv_id_servers
