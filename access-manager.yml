@@ -2,7 +2,7 @@
 - name: elementer til am servere
   hosts: all
   become: true
-  pre_tasks
+  pre_tasks:
   - name: Enable codeready-builder repo
     command: >
       subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms
