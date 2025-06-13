@@ -2,8 +2,24 @@
 - name: elementer til am servere
   hosts: all
   become: true
-  
-  tasks:
+  pre_tasks
+  - name: Enable codeready-builder repo
+    command: >
+      subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms
+    register: codeready_repo_result
+    changed_when: "'enabled' in codeready_repo_result.stdout"
+    failed_when: codeready_repo_result.rc != 0 and 'is already enabled' not in codeready_repo_result.stdout
+
+  - name: Clean yum metadata
+    command: yum clean all
+
+  - name: Refresh yum metadata
+    command: yum makecache
+
+  - name: Run yum update on all servers to ensure they are up to date
+    yum:
+      name: '*'
+      state: latest
   
     
 - hosts: am_package_targets
