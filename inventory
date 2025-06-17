@@ -46,14 +46,32 @@ amsec11ul
 ampwr11ul
 ampwr12ul
 
+[test_admin_servers]
+amadm11pl
+
+[test_id_servers]
+amid11tl
+amid12tl
+
+[test_gw_servers]
+amgw11tl
+amgw12tl
+
 [test_edir_servers]
 amsec11tl
 amsec12tl
+
+[test_sspr_servers]
+ampwr11tl
+ampwr12tl
 
 [am_package_targets:children]
 prod_admin_servers
 prod_id_servers
 prod_gw_servers
+test_admin_servers
+test_id_servers
+test_gw_servers
 udv_admin_servers
 udv_id_servers
 udv_gw_servers
@@ -61,5 +79,5 @@ udv_gw_servers
 [edir_package_targets:children]
 prod_edir_servers
 udv_edir_servers
-[test_edir_servers]
+test_edir_servers
 
