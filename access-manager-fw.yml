@@ -119,6 +119,7 @@
       - 636/tcp
       - 8030/tcp
       - 8443/tcp
+      - 9000/tcp
       
 - hosts: aa_fwrules_targets
   become: true
