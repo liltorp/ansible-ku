@@ -1,0 +1,10 @@
+- name: Ensure SELinux is set to permissive
+  hosts: prod_sspr_servers
+  become: yes
+  tasks:
+    - name: Update SELINUX mode in config
+      ansible.builtin.lineinfile:
+        path: /etc/selinux/config
+        regexp: '^SELINUX='
+        line: 'SELINUX=permissive'
+        backrefs: yes
