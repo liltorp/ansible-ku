@@ -1,5 +1,5 @@
 - name: Ensure SELinux is set to permissive
-  hosts: prod_id_servers
+  hosts: all_prod_servers
   become: yes
   tasks:
     - name: Update SELINUX mode in config
