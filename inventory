@@ -65,6 +65,13 @@ amsec12tl
 ampwr11tl
 ampwr12tl
 
+[all_prod_servers:children]
+prod_admin_servers
+prod_id_servers
+prod_gw_servers
+prod_edir_servers
+prod_sspr_servers
+
 [am_package_targets:children]
 prod_admin_servers
 prod_id_servers
