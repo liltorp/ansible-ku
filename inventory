@@ -72,6 +72,20 @@ prod_gw_servers
 prod_edir_servers
 prod_sspr_servers
 
+[all_test_servers:children]
+test_admin_servers
+test_id_servers
+test_gw_servers
+test_edir_servers
+test_sspr_servers
+
+[all_udv_servers:children]
+udv_admin_servers
+udv_id_servers
+udv_gw_servers
+udv_edir_servers
+udv_sspr_servers
+
 [am_package_targets:children]
 prod_admin_servers
 prod_id_servers
