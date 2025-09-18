@@ -15,6 +15,7 @@
         mode: '0755'
       delegate_to: localhost
       run_once: true
+      become: false
 
     - name: Check if the file exists and gather stat info
       stat:
