@@ -29,6 +29,7 @@
     - name: Find the most recent file and its host
       run_once: true
       delegate_to: localhost
+      become: false
       vars:
         latest_host: ""
         latest_mtime: 0
@@ -43,6 +44,7 @@
         msg: "Host '{{ latest_host }}' has the latest file modified at {{ latest_mtime }}"
       run_once: true
       delegate_to: localhost
+      become: false
 
     - name: Abort if no file was found on any server
       fail:
@@ -50,6 +52,7 @@
       when: latest_host == ""
       run_once: true
       delegate_to: localhost
+      become: false
 
     - name: Fetch the latest file from the source host to control node
       fetch:
@@ -63,6 +66,7 @@
       stat:
         path: "{{ local_temp_dir }}/copyfile.txt"
       delegate_to: localhost
+      become: false
       run_once: true
       register: local_file_check
 
@@ -92,4 +96,5 @@
         path: "{{ local_temp_dir }}/copyfile.txt"
         state: absent
       delegate_to: localhost
+      become: false
       run_once: true
