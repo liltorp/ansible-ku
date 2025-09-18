@@ -5,7 +5,7 @@
   gather_facts: no
   vars:
     file_path: "/etc/opt/microfocus/sspr/SSPRConfiguration.xml"
-    local_temp_dir: "/home/cbq520/temp"
+    local_temp_dir: "/home/cbq520/ansible-ku/temp"
   tasks:
 
     - name: Ensure local temp dir exists
