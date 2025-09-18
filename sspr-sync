@@ -3,7 +3,7 @@
   gather_facts: no
   become: true
   vars:
-    file_path: "/etc/opt/microfocus/sspr/SSPRConfiguration.xml"
+    file_path: "/etc/opt/microfocus/sspr/testSSPRConfiguration.xml"
     local_temp_dir: "/home/cbq520/ansible-ku/temp"
 
   tasks:
