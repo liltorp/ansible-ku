@@ -1,7 +1,7 @@
 ---
 - name: Sync the latest version of a file across servers
   hosts: prod_sspr_servers
-  become: true
+  become: yes
   gather_facts: no
   vars:
     file_path: "/home/lars/copyfile.txt"
