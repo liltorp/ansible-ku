@@ -1,10 +1,11 @@
 - name: Sync the latest version of a file across servers
   hosts: prod_sspr_servers
   gather_facts: no
+  become: true
   vars:
     file_path: "/etc/opt/microfocus/sspr/SSPRConfiguration.xml"
     local_temp_dir: "/home/cbq520/ansible-ku/temp"
-    is_local: "{{ (delegate_to | default('') == 'localhost') or (inventory_hostname == 'localhost') }}"
+
   tasks:
 
     - name: Ensure local temp dir exists
@@ -14,13 +15,13 @@
         mode: '0755'
       delegate_to: localhost
       run_once: true
-      become: "{{ not is_local }}"
+      become: false
 
     - name: Check if the file exists and gather stat info
       stat:
         path: "{{ file_path }}"
       register: file_stat
-      become: true
+
     - name: Save file stat info as fact on each host
       set_fact:
         my_file_stat: "{{ file_stat.stat }}"
@@ -28,22 +29,19 @@
     - name: Find the most recent file and its host
       run_once: true
       delegate_to: localhost
-      vars:
-        latest_host: ""
-        latest_mtime: 0
       set_fact:
         latest_host: "{{ item.0 }}"
         latest_mtime: "{{ item.1.mtime }}"
       loop: "{{ ansible_play_hosts | zip(ansible_play_hosts | map('extract', hostvars, 'my_file_stat')) | list }}"
       when: item.1.exists and item.1.mtime | int > latest_mtime | int
       become: false
-
     - name: Show which host has the latest file
       debug:
         msg: "Host '{{ latest_host }}' has the latest file modified at {{ latest_mtime }}"
       run_once: true
       delegate_to: localhost
       become: false
+
     - name: Abort if no file was found on any server
       fail:
         msg: "No file found on any server."
@@ -59,7 +57,6 @@
         flat: yes
       delegate_to: "{{ latest_host }}"
       run_once: true
-      become: true
 
     - name: Verify the file exists on the control node
       stat:
@@ -86,7 +83,6 @@
         mode: '0644'
       when: inventory_hostname != latest_host
       register: copy_result
-      become: true
 
     - name: Log copied file destinations
       debug:
