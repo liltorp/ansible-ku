@@ -2,6 +2,7 @@
   hosts: prod_sspr_servers
   gather_facts: no
   become: true
+
   vars:
     file_path: "/etc/opt/microfocus/sspr/testSSPRConfiguration.xml"
     local_temp_dir: "/home/cbq520/ansible-ku/temp"
@@ -17,50 +18,72 @@
       run_once: true
       become: false
 
-    - name: Check if the file exists and gather stat info
+    - name: Check if the file exists and gather stat info on each host
       stat:
         path: "{{ file_path }}"
       register: file_stat
 
-    - name: Save file stat info as fact on each host
+    - name: Save normalized file info as fact on each host
       set_fact:
-        my_file_stat: "{{ file_stat.stat }}"
+        file_info:
+          host: "{{ inventory_hostname }}"
+          path: "{{ file_path }}"
+          exists: "{{ file_stat.stat.exists | default(false) }}"
+          # mtime findes kun hvis filen findes; brug 0 som safe default
+          mtime: "{{ (file_stat.stat.mtime | default(0)) | int }}"
 
-    - name: Find the most recent file and its host
-      run_once: true
-      delegate_to: localhost
+    - name: Collect file_info from all hosts on localhost
       set_fact:
-        latest_host: "{{ item.0 }}"
-        latest_mtime: "{{ item.1.mtime }}"
-      loop: "{{ ansible_play_hosts | zip(ansible_play_hosts | map('extract', hostvars, 'my_file_stat')) | list }}"
-      when: item.1.exists and item.1.mtime | int > latest_mtime | int
-      become: false
-    - name: Show which host has the latest file
-      debug:
-        msg: "Host '{{ latest_host }}' has the latest file modified at {{ latest_mtime }}"
-      run_once: true
+        all_files: "{{ ansible_play_hosts | map('extract', hostvars, 'file_info') | list }}"
       delegate_to: localhost
+      run_once: true
+      become: false
+
+    - name: Pick the most recent existing file across hosts
+      set_fact:
+        most_recent: >-
+          {{ (all_files
+              | selectattr('exists')
+              | sort(attribute='mtime')) | last | default(None) }}
+      delegate_to: localhost
+      run_once: true
       become: false
 
     - name: Abort if no file was found on any server
       fail:
-        msg: "No file found on any server."
-      when: latest_host == ""
-      run_once: true
+        msg: "No file found on any server for path {{ file_path }}"
+      when: most_recent is none
       delegate_to: localhost
+      run_once: true
+      become: false
+
+    - name: Expose latest_host and latest_mtime for readability
+      set_fact:
+        latest_host: "{{ most_recent.host }}"
+        latest_mtime: "{{ most_recent.mtime }}"
+        latest_basename: "{{ file_path | basename }}"
+      delegate_to: localhost
+      run_once: true
+      become: false
+
+    - name: Show which host has the latest file
+      debug:
+        msg: "Host '{{ latest_host }}' has the latest file modified at {{ latest_mtime }}"
+      delegate_to: localhost
+      run_once: true
       become: false
 
     - name: Fetch the latest file from the source host to control node
       fetch:
         src: "{{ file_path }}"
-        dest: "{{ local_temp_dir }}/copyfile.txt"
-        flat: yes
+        dest: "{{ local_temp_dir }}/"
+        flat: yes        # gem som {{ basename(file_path) }} i local_temp_dir
       delegate_to: "{{ latest_host }}"
       run_once: true
 
     - name: Verify the file exists on the control node
       stat:
-        path: "{{ local_temp_dir }}/copyfile.txt"
+        path: "{{ local_temp_dir }}/{{ latest_basename }}"
       delegate_to: localhost
       run_once: true
       register: local_file_check
@@ -68,30 +91,29 @@
 
     - name: Fail if file was not fetched
       fail:
-        msg: "File not found on control node at {{ local_temp_dir }}/copyfile.txt"
+        msg: "File not found on control node at {{ local_temp_dir }}/{{ latest_basename }}"
       when: not local_file_check.stat.exists
-      run_once: true
       delegate_to: localhost
+      run_once: true
       become: false
 
     - name: Copy the latest file to all other servers
       copy:
-        src: "{{ local_temp_dir }}/copyfile.txt"
+        src: "{{ local_temp_dir }}/{{ latest_basename }}"   # fra control node
         dest: "{{ file_path }}"
         owner: root
         group: root
         mode: '0644'
       when: inventory_hostname != latest_host
       register: copy_result
-
     - name: Log copied file destinations
       debug:
         msg: "Fil kopieret fra {{ latest_host }} til {{ inventory_hostname }}: {{ copy_result.dest }}"
       when: inventory_hostname != latest_host and copy_result is defined
 
-    - name: Clean up temp directory on control node
+    - name: Clean up temp file on control node
       file:
-        path: "{{ local_temp_dir }}/copyfile.txt"
+        path: "{{ local_temp_dir }}/{{ latest_basename }}"
         state: absent
       delegate_to: localhost
       run_once: true
