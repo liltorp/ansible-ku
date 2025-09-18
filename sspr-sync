@@ -1,6 +1,6 @@
 ---
 - name: Sync the latest version of a file across servers
-  hosts: all
+  hosts: prod_sspr_servers
   become: true
   gather_facts: no
   vars:
