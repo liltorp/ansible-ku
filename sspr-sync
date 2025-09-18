@@ -1,11 +1,10 @@
----
 - name: Sync the latest version of a file across servers
   hosts: prod_sspr_servers
-  become: yes
   gather_facts: no
   vars:
-    file_path: "/etc/opt/microfocus/sspr/testSSPRConfiguration.xml"
+    file_path: "/etc/opt/microfocus/sspr/SSPRConfiguration.xml"
     local_temp_dir: "/home/cbq520/ansible-ku/temp"
+    is_local: "{{ (delegate_to | default('') == 'localhost') or (inventory_hostname == 'localhost') }}"
   tasks:
 
     - name: Ensure local temp dir exists
@@ -15,13 +14,13 @@
         mode: '0755'
       delegate_to: localhost
       run_once: true
-      become: false
+      become: "{{ not is_local }}"
 
     - name: Check if the file exists and gather stat info
       stat:
         path: "{{ file_path }}"
       register: file_stat
-
+      become: true
     - name: Save file stat info as fact on each host
       set_fact:
         my_file_stat: "{{ file_stat.stat }}"
@@ -29,7 +28,6 @@
     - name: Find the most recent file and its host
       run_once: true
       delegate_to: localhost
-      become: false
       vars:
         latest_host: ""
         latest_mtime: 0
@@ -38,6 +36,7 @@
         latest_mtime: "{{ item.1.mtime }}"
       loop: "{{ ansible_play_hosts | zip(ansible_play_hosts | map('extract', hostvars, 'my_file_stat')) | list }}"
       when: item.1.exists and item.1.mtime | int > latest_mtime | int
+      become: false
 
     - name: Show which host has the latest file
       debug:
@@ -45,7 +44,6 @@
       run_once: true
       delegate_to: localhost
       become: false
-
     - name: Abort if no file was found on any server
       fail:
         msg: "No file found on any server."
@@ -57,34 +55,38 @@
     - name: Fetch the latest file from the source host to control node
       fetch:
         src: "{{ file_path }}"
-        dest: "{{ local_temp_dir }}/testSSPRConfiguration.xml"
+        dest: "{{ local_temp_dir }}/copyfile.txt"
         flat: yes
       delegate_to: "{{ latest_host }}"
       run_once: true
+      become: true
 
     - name: Verify the file exists on the control node
       stat:
-        path: "{{ local_temp_dir }}/testSSPRConfiguration.xml"
+        path: "{{ local_temp_dir }}/copyfile.txt"
       delegate_to: localhost
-      become: false
       run_once: true
       register: local_file_check
+      become: false
 
     - name: Fail if file was not fetched
       fail:
-        msg: "File not found on control node at {{ local_temp_dir }}/testSSPRConfiguration.xml"
+        msg: "File not found on control node at {{ local_temp_dir }}/copyfile.txt"
       when: not local_file_check.stat.exists
       run_once: true
+      delegate_to: localhost
+      become: false
 
     - name: Copy the latest file to all other servers
       copy:
-        src: "{{ local_temp_dir }}/testSSPRConfiguration.xml"
+        src: "{{ local_temp_dir }}/copyfile.txt"
         dest: "{{ file_path }}"
         owner: root
         group: root
         mode: '0644'
       when: inventory_hostname != latest_host
       register: copy_result
+      become: true
 
     - name: Log copied file destinations
       debug:
@@ -93,8 +95,8 @@
 
     - name: Clean up temp directory on control node
       file:
-        path: "{{ local_temp_dir }}/testSSPRConfiguration.xml"
+        path: "{{ local_temp_dir }}/copyfile.txt"
         state: absent
       delegate_to: localhost
-      become: false
       run_once: true
+      become: false
