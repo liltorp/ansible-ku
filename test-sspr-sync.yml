@@ -1,0 +1,126 @@
+- name: Sync the latest version of a file across servers
+  hosts: test_sspr_servers
+  gather_facts: no
+  become: true
+
+  vars:
+    file_path: "/etc/opt/microfocus/sspr/SSPRConfiguration.xml"
+    # Vælg hvad der tæller som "forskel":
+    # - content  -> kun indhold (default)
+    # - content_or_perms -> indhold ELLER perms (ejer/gruppe/mode)
+    diff_scope: "content"
+
+  tasks:
+
+    - name: Stat file on each host (with checksum)
+      ansible.builtin.stat:
+        path: "{{ file_path }}"
+        get_checksum: yes
+        checksum_algorithm: sha1
+      register: file_stat
+
+    - name: Save normalized file info as fact on each host
+      ansible.builtin.set_fact:
+        file_info:
+          host: "{{ inventory_hostname }}"
+          path: "{{ file_path }}"
+          exists: "{{ file_stat.stat.exists | default(false) }}"
+          mtime: "{{ (file_stat.stat.mtime | default(0)) | int }}"
+          checksum: "{{ file_stat.stat.checksum | default('') }}"
+          owner: "{{ file_stat.stat.pw_name | default(omit) }}"
+          group: "{{ file_stat.stat.gr_name | default(omit) }}"
+          mode:  "{{ file_stat.stat.mode   | default(omit) }}"
+
+    - name: Collect file_info from all hosts on localhost
+      ansible.builtin.set_fact:
+        all_files: "{{ ansible_play_hosts | map('extract', hostvars, 'file_info') | list }}"
+      delegate_to: localhost
+      run_once: true
+      become: false
+
+    - name: Pick the most recent existing file across hosts
+      ansible.builtin.set_fact:
+        most_recent: >-
+          {{ (all_files
+              | selectattr('exists')
+              | sort(attribute='mtime')) | last | default(None) }}
+      delegate_to: localhost
+      run_once: true
+      become: false
+
+    - name: Abort if no file was found on any server
+      ansible.builtin.fail:
+        msg: "No file found on any server for path {{ file_path }}"
+      when: most_recent is none
+      delegate_to: localhost
+      run_once: true
+      become: false
+
+    - name: Expose source host and attributes
+      ansible.builtin.set_fact:
+        source_host: "{{ most_recent.host }}"
+        source_checksum: "{{ most_recent.checksum }}"
+        source_owner: "{{ most_recent.owner | default(omit) }}"
+        source_group: "{{ most_recent.group | default(omit) }}"
+        source_mode:  "{{ most_recent.mode  | default(omit) }}"
+      delegate_to: localhost
+      run_once: true
+      become: false
+
+    - name: Show which host has the latest file
+      ansible.builtin.debug:
+        msg: >-
+          Host '{{ source_host }}' has the latest file (mtime={{ most_recent.mtime }},
+          checksum={{ source_checksum }})
+      delegate_to: localhost
+      run_once: true
+      become: false
+
+    # Hent indholdet én gang fra kilden (ingen tempfiler)
+    - name: Read file content from source host
+      ansible.builtin.slurp:
+        src: "{{ file_path }}"
+      register: src_file
+      delegate_to: "{{ source_host }}"
+      run_once: true
+
+    - name: Make source content available to all hosts
+      ansible.builtin.set_fact:
+        source_content: "{{ src_file.content | b64decode }}"
+
+    - name: Compute per-host difference flags
+      ansible.builtin.set_fact:
+        needs_content_update: >-
+          {{ (not file_info.exists) or (file_info.checksum != source_checksum) }}
+        needs_perms_update: >-
+          {{ diff_scope == 'content_or_perms'
+             and file_info.exists
+             and (
+               (source_owner is defined and file_info.owner is defined and file_info.owner != source_owner)
+               or (source_group is defined and file_info.group is defined and file_info.group != source_group)
+               or (source_mode  is defined and file_info.mode  is defined and file_info.mode  != source_mode)
+             )
+          }}
+
+    # --- KUN indhold (default). copy ændrer KUN hvis indhold er forskelligt ---
+    - name: Update content where it differs
+      ansible.builtin.copy:
+        content: "{{ source_content }}"
+        dest: "{{ file_path }}"
+        # Bemærk: vi sætter IKKE owner/group/mode her, så kun indhold afgør "changed"
+      when:
+        - inventory_hostname != source_host
+        - needs_content_update
+
+    # --- Valgfri perm-udligning, hvis diff_scope=content_or_perms ---
+    - name: Align owner/group/mode to match source (only if content is same)
+      ansible.builtin.file:
+        path: "{{ file_path }}"
+        owner: "{{ source_owner }}"
+        group: "{{ source_group }}"
+        mode:  "{{ source_mode }}"
+      when:
+        - diff_scope == 'content_or_perms'
+        - inventory_hostname != source_host
+        - not needs_content_update       # rør ikke indholdet her
+        - needs_perms_update
