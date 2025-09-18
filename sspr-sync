@@ -57,14 +57,14 @@
     - name: Fetch the latest file from the source host to control node
       fetch:
         src: "{{ file_path }}"
-        dest: "{{ local_temp_dir }}/copyfile.txt"
+        dest: "{{ local_temp_dir }}/testSSPRConfiguration.xml"
         flat: yes
       delegate_to: "{{ latest_host }}"
       run_once: true
 
     - name: Verify the file exists on the control node
       stat:
-        path: "{{ local_temp_dir }}/copyfile.txt"
+        path: "{{ local_temp_dir }}/testSSPRConfiguration.xml"
       delegate_to: localhost
       become: false
       run_once: true
@@ -72,13 +72,13 @@
 
     - name: Fail if file was not fetched
       fail:
-        msg: "File not found on control node at {{ local_temp_dir }}/copyfile.txt"
+        msg: "File not found on control node at {{ local_temp_dir }}/testSSPRConfiguration.xml"
       when: not local_file_check.stat.exists
       run_once: true
 
     - name: Copy the latest file to all other servers
       copy:
-        src: "{{ local_temp_dir }}/copyfile.txt"
+        src: "{{ local_temp_dir }}/testSSPRConfiguration.xml"
         dest: "{{ file_path }}"
         owner: root
         group: root
@@ -93,7 +93,7 @@
 
     - name: Clean up temp directory on control node
       file:
-        path: "{{ local_temp_dir }}/copyfile.txt"
+        path: "{{ local_temp_dir }}/testSSPRConfiguration.xml"
         state: absent
       delegate_to: localhost
       become: false
