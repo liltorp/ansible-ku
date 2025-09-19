@@ -4,7 +4,7 @@
   become: true
 
   vars:
-    file_path: "/etc/opt/microfocus/sspr/testSSPRConfiguration.xml"
+    file_path: "/etc/opt/microfocus/sspr/SSPRConfiguration.xml"
 
     # Sammenligningsscope:
     #  - content (default): kun indhold
