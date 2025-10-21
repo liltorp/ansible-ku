@@ -24,6 +24,12 @@ ampwr12pl
 ampwr13pl
 ampwr14pl
 
+[old_prod_sspr_servers]
+ampwr01pl
+ampwr02pl
+ampwr03pl
+ampwr04pl
+
 [udv_admin_servers]
 amadm11ul
 amadm12ul
