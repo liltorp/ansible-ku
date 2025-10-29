@@ -1,5 +1,5 @@
 - name: Sync the latest version of a file across servers
-  hosts: test_sspr_servers
+  hosts: old_prod_sspr_servers
   gather_facts: no
   become: true
 
