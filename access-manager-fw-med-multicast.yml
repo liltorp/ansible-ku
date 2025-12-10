@@ -1,0 +1,197 @@
+
+- name: elementer til am servere
+  hosts: all
+  become: true
+  pre_tasks:
+  - name: Enable codeready-builder repo
+    command: >
+      subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms
+    register: codeready_repo_result
+    changed_when: "'enabled' in codeready_repo_result.stdout"
+    failed_when: codeready_repo_result.rc != 0 and 'is already enabled' not in codeready_repo_result.stdout
+
+  - name: Clean yum metadata
+    command: yum clean all
+
+  - name: Refresh yum metadata
+    command: yum makecache
+
+  - name: Run yum update on all servers to ensure they are up to date
+    yum:
+      name: '*'
+      state: latest
+
+
+# ---- ID servers: porte + IGMP + multicast rich-rule ----
+- hosts: prod_id_servers:udv_id_servers
+  become: true
+  collections:
+    - ansible.posix
+  tasks:
+  - name: firewall rules for id servers (ports)
+    firewalld:
+      zone: public
+      port: "{{ item }}"
+      state: enabled
+      permanent: true
+      immediate: true
+    loop:
+      - 22/tcp
+      - 443/tcp
+      - 524/tcp
+      - 1443/tcp
+      - 7801/tcp
+      - 8443/tcp
+      - 9968/tcp
+
+  - name: Allow IGMP protocol in public zone (for multicast group joins)
+    firewalld:
+      zone: public
+      protocol: igmp
+      state: enabled
+      permanent: true
+      immediate: true
+
+  - name: Allow UDP multicast to 224.0.0.75:7801 (rich rule)
+    firewalld:
+      zone: public
+      rich_rule: 'rule family="ipv4" destination address="224.0.0.75/32" port port="7801" protocol="udp" accept'
+      state: enabled
+      permanent: true
+      immediate: true
+
+
+# ---- Admin servers: porte ----
+- hosts: prod_admin_servers:udv_admin_servers
+  become: true
+  tasks:
+  - name: firewall rules for admin servers (ports)
+    firewalld:
+      zone: public
+      port: "{{ item }}"
+      state: enabled
+      permanent: true
+      immediate: true
+    loop:
+      - 22/tcp
+      - 524/tcp
+      - 636/tcp
+      - 705/tcp
+      - 1290/tcp
+      - 8030/tcp
+      - 8443/tcp
+      - 8444/tcp
+      - 9968/tcp
+
+
+# ---- GW servers: porte + IGMP + multicast rich-rule (hvis omping kører her) ----
+- hosts: prod_gw_servers:udv_gw_servers
+  become: true
+  collections:
+    - ansible.posix
+  tasks:
+  - name: firewall rules for gw servers (ports)
+    firewalld:
+      zone: public
+      port: "{{ item }}"
+      state: enabled
+      permanent: true
+      immediate: true
+    loop:
+      - 22/tcp
+      - 443/tcp
+      - 524/tcp
+      - 1099/tcp
+      - 1443/tcp
+      - 7801/tcp
+      - 9968/tcp
+
+  - name: Allow IGMP protocol in public zone (for multicast group joins)
+    firewalld:
+      zone: public
+      protocol: igmp
+      state: enabled
+      permanent: true
+      immediate: true
+
+  - name: Allow UDP multicast to 224.0.0.75:7801 (rich rule)
+    firewalld:
+      zone: public
+      rich_rule: 'rule family="ipv4" destination address="224.0.0.75/32" port port="7801" protocol="udp" accept'
+      state: enabled
+      permanent: true
+      immediate: true
+
+
+# ---- ODB servers: porte ----
+- hosts: prod_id_servers:udv_id_servers
+  become: true
+  tasks:
+  - name: firewall rules for odb servers (ports)
+    firewalld:
+      zone: public
+      port: "{{ item }}"
+      state: enabled
+      permanent: true
+      immediate: true
+    loop:
+      - 22/tcp
+      - 1521/tcp
+
+
+# ---- SSPR servers: porte ----
+- hosts: prod_sspr_servers:udv_sspr_servers
+  become: true
+  tasks:
+  - name: firewall rules for sspr servers (ports)
+    firewalld:
+      zone: public
+      port: "{{ item }}"
+      state: enabled
+      permanent: true
+      immediate: true
+    loop:
+      - 22/tcp
+      - 80/tcp
+      - 443/tcp
+
+
+# ---- eDir servers: porte ----
+- hosts: prod_edir_servers:udv_edir_servers
+  become: true
+  tasks:
+  - name: firewall rules for edir servers (ports)
+    firewalld:
+      zone: public
+      port: "{{ item }}"
+      state: enabled
+      permanent: true
+      immediate: true
+    loop:
+      - 22/tcp
+      - 524/tcp
+      - 636/tcp
+      - 8030/tcp
+      - 8443/tcp
+      - 9000/tcp
+
+
+# ---- AA servers: porte ----
+- hosts: aa_fwrules_targets
+  become: true
+  tasks:
+  - name: firewall rules for aa servers (ports)
+    firewalld:
+      zone: public
+      port: "{{ item }}"
+      state: enabled
+      permanent: true
+      immediate: true
+    loop:
+      - 22/tcp
+      - 80/tcp
+      - 443/tcp
+      - 8080/tcp
+      - 5432/tcp
+      - 9200/tcp
+      - 9300/tcp
