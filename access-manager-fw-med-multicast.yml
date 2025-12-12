@@ -23,7 +23,7 @@
 
 
 # ---- ID servers: porte + IGMP + multicast rich-rule ----
-- hosts: prod_id_servers:udv_id_servers
+- hosts: prod_id_servers:udv_id_servers:test_id_servers
   become: true
   collections:
     - ansible.posix
@@ -85,7 +85,7 @@
 
 
 # ---- GW servers: porte + IGMP + multicast rich-rule (hvis omping kører her) ----
-- hosts: prod_gw_servers:udv_gw_servers
+- hosts: prod_gw_servers:udv_gw_servers:test_gw_servers
   become: true
   collections:
     - ansible.posix
