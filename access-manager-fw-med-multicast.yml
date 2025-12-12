@@ -62,7 +62,7 @@
 
 
 # ---- Admin servers: porte ----
-- hosts: prod_admin_servers:udv_admin_servers
+- hosts: prod_admin_servers:udv_admin_servers:test_admin_servers
   become: true
   tasks:
   - name: firewall rules for admin servers (ports)
@@ -124,7 +124,7 @@
 
 
 # ---- ODB servers: porte ----
-- hosts: prod_id_servers:udv_id_servers
+- hosts: prod_id_servers:udv_id_servers:test_id_servers
   become: true
   tasks:
   - name: firewall rules for odb servers (ports)
@@ -140,7 +140,7 @@
 
 
 # ---- SSPR servers: porte ----
-- hosts: prod_sspr_servers:udv_sspr_servers
+- hosts: prod_sspr_servers:udv_sspr_servers:test_sspr_servers
   become: true
   tasks:
   - name: firewall rules for sspr servers (ports)
@@ -157,7 +157,7 @@
 
 
 # ---- eDir servers: porte ----
-- hosts: prod_edir_servers:udv_edir_servers
+- hosts: prod_edir_servers:udv_edir_servers:test_edir_servers
   become: true
   tasks:
   - name: firewall rules for edir servers (ports)
