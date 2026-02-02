@@ -102,7 +102,7 @@
     loop:
       - 22/tcp
       - 80/tcp
-      - 443/tcp
+      - 8443/tcp
       
 - hosts: prod_edir_servers:udv_edir_servers
   become: true
