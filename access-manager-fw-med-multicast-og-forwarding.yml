@@ -63,7 +63,10 @@
   - name: Forward port 80 to 8080 (tcp)
     ansible.posix.firewalld:
       zone: public
-      port_forward: port=80:proto=tcp:toport=8080
+      port_forward:
+        port: 80
+        protocol: tcp
+        to_port: 8080
       state: enabled
       permanent: yes
       immediate: yes
@@ -71,7 +74,10 @@
   - name: Forward port 443 to 8443 (tcp)
     ansible.posix.firewalld:
       zone: public
-      port_forward: port=443:proto=tcp:toport=8443
+      port_forward:
+        port: 443
+        protocol: tcp
+        to_port: 8443
       state: enabled
       permanent: yes
       immediate: yes
