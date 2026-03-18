@@ -60,13 +60,13 @@
       immediate: true
 
   # --- HER KOMMER DINE PORT-FORWARDS ---
-  - name: Forward port 80 to 8080 (tcp)
+ - name: Forward port 80 to 8080 (tcp)
     ansible.posix.firewalld:
       zone: public
       port_forward:
-        port: 80
-        protocol: tcp
-        to_port: 8080
+        - port: 80
+          protocol: tcp
+          to_port: 8080
       state: enabled
       permanent: yes
       immediate: yes
@@ -75,9 +75,9 @@
     ansible.posix.firewalld:
       zone: public
       port_forward:
-        port: 443
-        protocol: tcp
-        to_port: 8443
+        - port: 443
+          protocol: tcp
+          to_port: 8443
       state: enabled
       permanent: yes
       immediate: yes
