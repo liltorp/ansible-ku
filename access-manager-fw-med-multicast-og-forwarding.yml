@@ -21,14 +21,14 @@
       state: latest
 
 # ---- ID servers: porte + IGMP + multicast rich-rule ----
-- hosts: test_id_servers
+- hosts: prod_id_servers:udv_id_servers:test_id_servers
   become: true
   collections:
     - ansible.posix
-  tasks:
 
+  tasks:
   - name: firewall rules for id servers (ports)
-    firewalld:
+    ansible.posix.firewalld:
       zone: public
       port: "{{ item }}"
       state: enabled
@@ -44,7 +44,7 @@
       - 9968/tcp
 
   - name: Allow IGMP protocol in public zone (for multicast group joins)
-    firewalld:
+    ansible.posix.firewalld:
       zone: public
       protocol: igmp
       state: enabled
@@ -52,15 +52,15 @@
       immediate: true
 
   - name: Allow UDP multicast to 224.0.0.75:7801 (rich rule)
-    firewalld:
+    ansible.posix.firewalld:
       zone: public
       rich_rule: 'rule family="ipv4" destination address="224.0.0.75/32" port port="7801" protocol="udp" accept'
       state: enabled
       permanent: true
       immediate: true
 
-  # --- HER KOMMER DINE PORT-FORWARDS ---
-  - name: Forward port 80 to 8080 (tcp)
+  # --- External forward via rich rules ---
+  - name: Forward port 80 -> 8080 (tcp)
     ansible.posix.firewalld:
       zone: public
       rich_rule: 'rule family="ipv4" forward-port port="80" protocol="tcp" to-port="8080"'
@@ -68,13 +68,24 @@
       permanent: yes
       immediate: yes
 
-  - name: Forward port 443 to 8443 (tcp)
+  - name: Forward port 443 -> 8443 (tcp)
     ansible.posix.firewalld:
       zone: public
       rich_rule: 'rule family="ipv4" forward-port port="443" protocol="tcp" to-port="8443"'
       state: enabled
       permanent: yes
       immediate: yes
+
+  # --- LOCAL DNAT OUTPUT (dynamic per server IP) ---
+  - name: Add DNAT OUTPUT direct rules based on host IP
+    ansible.posix.firewalld:
+      direct_rule: "{{ item }}"
+      state: enabled
+      permanent: yes
+      immediate: yes
+    loop:
+      - "ipv4 nat OUTPUT 0 -p tcp -d {{ ansible_default_ipv4.address }} --dport 443 -j DNAT --to-destination {{ ansible_default_ipv4.address }}:8443"
+      - "ipv4 nat OUTPUT 0 -p tcp -d {{ ansible_default_ipv4.address }} --dport 80  -j DNAT --to-destination {{ ansible_default_ipv4.address }}:8080"
 
 # ---- Admin servers: porte ----
 - hosts: test_admin_servers
