@@ -21,7 +21,7 @@
       state: latest
 
 # ---- ID servers: porte + IGMP + multicast rich-rule ----
-- hosts: prod_id_servers:udv_id_servers:test_id_servers
+- hosts: test_id_servers
   become: true
   collections:
     - ansible.posix
