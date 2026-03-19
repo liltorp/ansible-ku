@@ -117,7 +117,7 @@
     ansible.builtin.command: firewall-cmd --reload
     when: fw_direct_add_perm is defined and (fw_direct_add_perm.results | selectattr('rc','equalto',0) | list | length) > 0
     changed_when: true
-``
+    
 # ---- Admin servers: porte ----
 - hosts: test_admin_servers
   become: true
