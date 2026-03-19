@@ -115,8 +115,7 @@
 
   - name: Reload firewalld if permanent rules were added
     ansible.builtin.command: firewall-cmd --reload
-    when: fw_direct_add_perm is defined and (fw_direct_add_perm.results | selectattr('rc','equalto',0) | list | length) > 0
-    changed_when: true
+    when: fw_direct_add_perm is defined and fw_direct_add_perm.changed
     
 # ---- Admin servers: porte ----
 - hosts: test_admin_servers
