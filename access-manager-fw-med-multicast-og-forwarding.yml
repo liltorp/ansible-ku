@@ -23,6 +23,7 @@
 # ---- ID servers: porte + IGMP + multicast rich-rule ----
 - hosts: test_id_servers
   become: true
+  gather_facts: yes
   collections:
     - ansible.posix
 
@@ -75,48 +76,48 @@
       permanent: yes
       immediate: yes
 
-        # --- DIRECT RULES (DNAT i OUTPUT for lokal trafik til hostens egen IP) ---
+  # --- DIRECT RULES (DNAT i OUTPUT for lokal trafik til hostens egen IP) ---
   - name: Build list of direct DNAT rules (dynamic per host IP)
-    # Brug hostens primære IP-adresse
     ansible.builtin.set_fact:
       direct_dnat_rules:
-          - "ipv4 nat OUTPUT 0 -p tcp -d {{ ansible_default_ipv4.address }} --dport 443 -j DNAT --to-destination {{ ansible_default_ipv4.address }}:8443"
-          - "ipv4 nat OUTPUT 0 -p tcp -d {{ ansible_default_ipv4.address }} --dport 80  -j DNAT --to-destination {{ ansible_default_ipv4.address }}:8080"
+        - "ipv4 nat OUTPUT 0 -p tcp -d {{ ansible_default_ipv4.address }} --dport 443 -j DNAT --to-destination {{ ansible_default_ipv4.address }}:8443"
+        - "ipv4 nat OUTPUT 0 -p tcp -d {{ ansible_default_ipv4.address }} --dport 80  -j DNAT --to-destination {{ ansible_default_ipv4.address }}:8080"
 
-  - name: Query if direct DNAT rule exists (runtime)
-    ansible.builtin.command: "firewall-cmd --direct --query-rule {{ item }}"
-    register: fw_direct_query_runtime
-    changed_when: false
+  # Runtime regler
+  - name: Check runtime direct rules
+    ansible.builtin.command: >
+      firewall-cmd --direct --query-rule {{ item }}
+    register: fw_runtime_query
     failed_when: false
+    changed_when: false
     loop: "{{ direct_dnat_rules }}"
 
-  - name: Add direct DNAT rule (runtime) when missing
-    ansible.builtin.command: "firewall-cmd --direct --add-rule {{ item.item }}"
-    loop: "{{ fw_direct_query_runtime.results }}"
+  - name: Add runtime direct rule when missing
+    ansible.builtin.command: >
+      firewall-cmd --direct --add-rule {{ item.item }}
     when: item.rc != 0
-    register: fw_direct_add_runtime
+    loop: "{{ fw_runtime_query.results }}"
     changed_when: "'success' in (item.stdout | default(''))"
-    failed_when: item.rc not in [0]
 
-  - name: Query if direct DNAT rule exists (permanent)
-    ansible.builtin.command: "firewall-cmd --permanent --direct --query-rule {{ item }}"
-    register: fw_direct_query_perm
-    changed_when: false
+  # Permanente regler
+  - name: Check permanent direct rules
+    ansible.builtin.command: >
+      firewall-cmd --permanent --direct --query-rule {{ item }}
+    register: fw_perm_query
     failed_when: false
+    changed_when: false
     loop: "{{ direct_dnat_rules }}"
 
-  - name: Add direct DNAT rule (permanent) when missing
-    ansible.builtin.command: "firewall-cmd --permanent --direct --add-rule {{ item.item }}"
-    loop: "{{ fw_direct_query_perm.results }}"
+  - name: Add permanent direct rule when missing
+    ansible.builtin.command: >
+      firewall-cmd --permanent --direct --add-rule {{ item.item }}
     when: item.rc != 0
-    register: fw_direct_add_perm
+    loop: "{{ fw_perm_query.results }}"
     changed_when: "'success' in (item.stdout | default(''))"
-    failed_when: item.rc not in [0]
 
   - name: Reload firewalld if permanent rules were added
     ansible.builtin.command: firewall-cmd --reload
-    when: fw_direct_add_perm is defined and fw_direct_add_perm.changed
-    
+    when: fw_perm_query.results | selectattr('rc','ne',0) | list | length > 0
 # ---- Admin servers: porte ----
 - hosts: test_admin_servers
   become: true
